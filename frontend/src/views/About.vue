@@ -79,7 +79,7 @@
             </div>
           </template>
           <div class="team-info">
-            <p>本系统由<a href="https://github.com/w1ndwill?tab=repositories" target="_blank" class="developer-link">@gaox</a>开发维护。如有任何问题或建议，请通过以下方式联系我们：</p>
+            <p>本系统由<a href="https://github.com/gaox" target="_blank" class="developer-link">@gaox</a>开发维护。如有任何问题或建议，请通过以下方式联系我们：</p>
             <ul class="contact-list">
               <li><i class="el-icon-message"></i> 邮箱: thisisgaox@qq.com</li>
               <li><i class="el-icon-office-building"></i> 地址: 苏州科技大学石湖校区</li>

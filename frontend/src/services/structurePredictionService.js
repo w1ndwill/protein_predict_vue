@@ -1,5 +1,5 @@
 // frontend/src/services/structurePredictionService.js
-import { helixPropensity, sheetPropensity } from '../constants/proteinData'
+import { helixPropensity, sheetPropensity } from '@/constants/proteinData'
 
 export function predictSecondaryStructure(sequence) {
   if (!sequence || sequence.length === 0) {

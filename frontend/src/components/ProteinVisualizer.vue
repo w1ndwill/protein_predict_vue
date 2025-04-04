@@ -153,10 +153,10 @@
 </template>
 
 <script>
-import { getAminoAcidClass } from '../utils/proteinUtils'
-import { drawProteinGraph, zoomSvg, resetZoomSvg } from '../services/proteinVisualizationService'
-import { predictSecondaryStructure } from '../services/structurePredictionService'
-import { fetchFunctionalSites } from '../services/functionalSitesService'
+import { getAminoAcidClass } from '@/utils/proteinUtils'
+import { drawProteinGraph, zoomSvg, resetZoomSvg } from '@/services/proteinVisualizationService'
+import { predictSecondaryStructure } from '@/services/structurePredictionService'
+import { fetchFunctionalSites } from '@/services/functionalSitesService'
 
 export default {
   name: 'ProteinVisualizer',
@@ -327,11 +327,27 @@ export default {
     },
 
     // Tab切换处理
+    // 在ProteinVisualizer.vue的handleTabChange方法中修改
     handleTabChange(tab) {
       if (tab.name === 'graph' && !this.graphSvg) {
         this.$nextTick(() => {
-          this.initGraphView()
-        })
+          // 传递二级结构和功能位点信息
+          const { svg, g, zoomBehavior } = drawProteinGraph(
+            this.$refs.graphContainer,
+            this.sequence,
+            this.$refs.graphContainer.clientWidth,
+            500,
+            {
+              onZoom: (zoom) => { this.currentZoom = zoom; }
+            },
+            {
+              secondaryStructure: this.secondaryStructure,
+              functionalSites: this.functionalSites
+            }
+          );
+          this.graphSvg = svg.node();
+          this.graphZoomBehavior = zoomBehavior;
+        });
       }
     },
 
