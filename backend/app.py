@@ -214,6 +214,88 @@ def delete_result(filename):
     except Exception as e:
         return jsonify({'error': f'删除失败：{str(e)}'}), 500
 
+
+@app.route('/predict/sites', methods=['POST'])
+def predict_protein_sites():
+    try:
+        data = request.get_json()
+        if not data or 'sequence' not in data:
+            return jsonify({'error': '未提供蛋白质序列'}), 400
+
+        sequence = data['sequence']
+        protein_id = data.get('protein_id', 'unknown')
+
+        # 这里可以实现更复杂的功能位点预测算法
+        # 以下是简单示例
+        sites = []
+
+        # 活性位点模式匹配
+        active_patterns = {
+            'RGD': '细胞粘附活性位点',
+            'CXXC': '氧化还原活性位点',
+            'SH': '丝氨酸水解酶活性位点'
+        }
+
+        # 结合位点模式匹配
+        binding_patterns = {
+            'WXXW': 'SH3结构域结合位点',
+            'PXXP': 'SH2结构域结合位点',
+            'YXN': '酪氨酸激酶底物结合位点'
+        }
+
+        # 修饰位点模式匹配
+        ptm_patterns = {
+            'KR': '甲基化位点',
+            'ST': '磷酸化位点',
+            'YT': '酪氨酸磷酸化位点'
+        }
+
+        # 简单模式匹配(实际应用中应使用更复杂算法)
+        import re
+
+        # 处理活性位点
+        for pattern, desc in active_patterns.items():
+            regex = pattern.replace('X', '.')
+            for match in re.finditer(regex, sequence):
+                sites.append({
+                    'position': match.start(),
+                    'length': len(pattern),
+                    'type': 'active-site',
+                    'description': f'{desc} ({pattern})'
+                })
+
+        # 处理结合位点
+        for pattern, desc in binding_patterns.items():
+            regex = pattern.replace('X', '.')
+            for match in re.finditer(regex, sequence):
+                sites.append({
+                    'position': match.start(),
+                    'length': len(pattern),
+                    'type': 'binding-site',
+                    'description': f'{desc} ({pattern})'
+                })
+
+        # 处理修饰位点
+        for pattern, desc in ptm_patterns.items():
+            regex = pattern.replace('X', '.')
+            for match in re.finditer(regex, sequence):
+                sites.append({
+                    'position': match.start(),
+                    'length': len(pattern),
+                    'type': 'ptm-site',
+                    'description': f'{desc} ({pattern})'
+                })
+
+        return jsonify({
+            'protein_id': protein_id,
+            'sequence': sequence,
+            'sites': sites
+        })
+
+    except Exception as e:
+        print(f"功能位点预测错误：{str(e)}")
+        return jsonify({'error': f'预测过程错误：{str(e)}'}), 500
+
 if __name__ == '__main__':
     app.debug = True
     app.run(host='127.0.0.1', port=5000)
