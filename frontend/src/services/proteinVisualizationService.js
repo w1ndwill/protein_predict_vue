@@ -33,17 +33,39 @@ export function drawProteinGraph(container, sequence, width, height, callbacks, 
   svg.call(zoomBehavior)
 
   // 使用螺旋初始布局优化节点分布
+  // 修改节点初始布局 (第31-40行)
   const nodes = Array.from(sequence).map((aa, i) => {
-    // 螺旋系数调整，根据序列长度动态调整半径
-    const spiralRadius = Math.min(width, height) * 0.35 * (1 - i / (2 * sequence.length));
-    const angle = i * (sequence.length > 100 ? 0.3 : 0.5); // 控制螺旋紧密度
+    let x, y;
+
+    // 根据蛋白质序列特征选择不同初始布局
+    const layoutType = sequence.length % 3; // 简单随机布局选择
+
+    if (layoutType === 0) {
+      // 改进的螺旋形，加入随机扰动
+      const spiralRadius = Math.min(width, height) * 0.35 * (1 - i / (2 * sequence.length));
+      const angle = i * (0.3 + Math.random() * 0.3); // 随机螺旋角度
+      x = width / 2 + spiralRadius * Math.cos(angle) + (Math.random() - 0.5) * 20;
+      y = height / 2 + spiralRadius * Math.sin(angle) + (Math.random() - 0.5) * 20;
+    } else if (layoutType === 1) {
+      // 网格布局
+      const gridSize = Math.ceil(Math.sqrt(sequence.length));
+      const cellWidth = width / gridSize;
+      const cellHeight = height / gridSize;
+      x = (i % gridSize) * cellWidth + cellWidth/2 + (Math.random() - 0.5) * 40;
+      y = Math.floor(i / gridSize) * cellHeight + cellHeight/2 + (Math.random() - 0.5) * 40;
+    } else {
+      // 随机布局
+      x = Math.random() * width;
+      y = Math.random() * height;
+    }
+
     return {
       id: i,
       aa: aa,
       group: getAminoAcidClass(aa),
       structure: secondaryStructure[i] || 'C',
-      x: width / 2 + spiralRadius * Math.cos(angle),
-      y: height / 2 + spiralRadius * Math.sin(angle)
+      x: x,
+      y: y
     };
   });
 

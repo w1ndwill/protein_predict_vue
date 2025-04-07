@@ -41,7 +41,7 @@ def predict_sequence():
             return jsonify({'error': '未提供蛋白质序列'}), 400
 
         sequence = data['sequence']
-        if not sequence or len(sequence) < 4:
+        if not sequence or len(sequence) < 10:
             return jsonify({'error': '序列长度过短'}), 400
 
         # 预测
