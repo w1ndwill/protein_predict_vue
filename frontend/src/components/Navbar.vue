@@ -7,17 +7,40 @@
         <img src="../assets/image.png" alt="Logo" class="logo-img" />
         <span class="logo-text">蛋白质功能预测</span>
       </div>
+
       <div class="nav-links">
         <router-link to="/" class="nav-link" :class="{ 'active': currentPath === '/' }">首页</router-link>
         <router-link to="/history" class="nav-link" :class="{ 'active': currentPath === '/history' }">历史记录</router-link>
         <router-link to="/about" class="nav-link" :class="{ 'active': currentPath === '/about' }">关于系统</router-link>
       </div>
+
       <div class="user-actions">
-        <el-tooltip content="系统设置" placement="bottom">
-          <el-button circle text>
-            <el-icon><Setting /></el-icon>
-          </el-button>
-        </el-tooltip>
+        <template v-if="isLoggedIn">
+          <el-dropdown trigger="click" @command="handleCommand">
+            <div class="user-info">
+              <el-avatar :size="32" class="user-avatar">{{ userInitials }}</el-avatar>
+              <span class="username">{{ currentUser.username }}</span>
+              <i class="el-icon-arrow-down"></i>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <i class="el-icon-user"></i> 个人中心
+                </el-dropdown-item>
+                <el-dropdown-item command="history">
+                  <i class="el-icon-time"></i> 预测历史
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">
+                  <i class="el-icon-switch-button"></i> 退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+        <template v-else>
+          <router-link to="/login" class="login-btn">登录</router-link>
+          <router-link to="/register" class="register-btn">注册</router-link>
+        </template>
       </div>
     </div>
 
@@ -34,6 +57,7 @@
 
 <script>
 import { Setting } from '@element-plus/icons-vue'
+import { isAuthenticated, getCurrentUser, logout } from '@/services/authService'
 import { ref, computed, onMounted } from 'vue'
 
 export default {
@@ -48,6 +72,8 @@ export default {
   },
   data() {
     return {
+      isLoggedIn: false,
+      currentUser: null,
       showPreview: false
     }
   },
@@ -67,8 +93,61 @@ export default {
         };
       }
       return {};
+    },
+    userInitials() {
+      if (!this.currentUser || !this.currentUser.username) return '用户'
+      return this.currentUser.username.substring(0, 1).toUpperCase()
     }
   },
+  created() {
+    this.checkAuthStatus()
+    // 监听路由变化，更新登录状态
+    this.$router.beforeEach((to, from, next) => {
+      this.checkAuthStatus()
+      next()
+    })
+  },
+  methods: {
+    checkAuthStatus() {
+      this.isLoggedIn = isAuthenticated()
+      if (this.isLoggedIn) {
+        this.currentUser = getCurrentUser()
+      }
+    },
+    handleCommand(command) {
+      switch (command) {
+        case 'profile':
+          this.$router.push('/profile')
+          break
+        case 'history':
+          this.$router.push('/history')
+          break
+        case 'logout':
+          this.handleLogout()
+          break
+      }
+    },
+    async handleLogout() {
+      try {
+        logout()
+        this.isLoggedIn = false
+        this.currentUser = null
+        this.$message.success('成功退出登录')
+
+        // 如果当前页面需要登录才能访问，则重定向到登录页
+        const requiresAuth = this.$route.meta.requiresAuth
+        if (requiresAuth) {
+          this.$router.push('/login')
+        } else {
+          // 否则刷新当前页面
+          this.$router.go(0)
+        }
+      } catch (error) {
+        this.$message.error('退出登录时发生错误')
+        console.error(error)
+      }
+    }
+  }
 }
 </script>
 
@@ -211,11 +290,129 @@ export default {
   width: 100%;
 }
 
+/* 用户操作区域样式优化 */
 .user-actions {
-  margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  padding: 4px 12px 4px 6px;
+  transition: all 0.2s;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.user-avatar {
+  margin-right: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.user-info:hover .user-avatar {
+  transform: scale(1.05);
+}
+
+.username {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-right: 5px;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.login-btn, .register-btn {
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.login-btn {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.login-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.register-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.register-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 下拉菜单样式优化 */
+:deep(.el-dropdown-menu) {
+  border-radius: 12px;
+  padding: 8px;
+  border: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12), 0 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+:deep(.el-dropdown-item) {
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  margin: 2px 0;
+}
+
+:deep(.el-dropdown-item:not(.is-disabled):hover) {
+  background-color: #f0f5ff;
+  color: #1976d2;
+}
+
+:deep(.el-dropdown-item i) {
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+/* 移动设备适配 */
+@media (max-width: 768px) {
+  .user-info {
+    padding: 4px 8px;
+  }
+
+  .username {
+    max-width: 80px;
+  }
+
+  .login-btn, .register-btn {
+    padding: 5px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .username {
+    display: none;
+  }
+
+  .user-info {
+    padding: 2px;
+  }
 }
 
 @media (max-width: 768px) {

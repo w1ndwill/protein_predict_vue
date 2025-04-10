@@ -5,10 +5,15 @@ from pathlib import Path
 import os
 import pandas as pd
 from werkzeug.utils import secure_filename
+from backend.database import init_db
 from predict_seq import ProteinPredictor
+from auth import register_user, login_user
 
 app = Flask(__name__)
 CORS(app)
+
+# 初始化数据库
+init_db()
 
 # 配置
 UPLOAD_FOLDER = 'static/uploads'
@@ -32,6 +37,54 @@ predictor = ProteinPredictor(MODEL_PATH, device='cuda')
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+# 用户注册接口
+@app.route('/auth/register', methods=['POST'])
+def register():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': '没有提供数据'}), 400
+
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not username or not email or not password:
+        return jsonify({'error': '用户名、邮箱和密码都是必需的'}), 400
+
+    result = register_user(username, email, password)
+
+    if result['success']:
+        return jsonify({'message': result['message']}), 201
+    else:
+        return jsonify({'error': result['message']}), 400
+
+
+# 用户登录接口
+@app.route('/auth/login', methods=['POST'])
+def login():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': '没有提供数据'}), 400
+
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'error': '用户名和密码都是必需的'}), 400
+
+    result = login_user(username, password)
+
+    if result['success']:
+        return jsonify({
+            'message': result['message'],
+            'token': result['token'],
+            'user': result['user']
+        }), 200
+    else:
+        return jsonify({'error': result['message']}), 401
 
 @app.route('/predict/sequence', methods=['POST'])
 def predict_sequence():
