@@ -51,13 +51,14 @@
               </template>
 
               <!-- 蛋白质列表（FASTA结果） -->
-              <protein-list
-                v-if="isFastaResult"
-                :proteins="proteinOptions"
-                :selected-id="selectedProteinId"
-                :sequences="proteinSequences"
-                @select="handleProteinChange"
-              />
+              <div v-if="isFastaResult" class="protein-list-container">
+                <protein-list
+                  :proteins="proteinOptions"
+                  :selected-id="selectedProteinId"
+                  :sequences="proteinSequences"
+                  @select="handleProteinChange"
+                />
+              </div>
 
               <!-- 当选择了蛋白质时显示其预测结果 -->
               <div v-if="selectedProteinId || !isFastaResult">
@@ -300,4 +301,27 @@ export default {
 
 <style scoped>
 @import '../assets/styles/home.css';
+.protein-list-container {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 5px;
+}
+
+.protein-list-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.protein-list-container::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: #c0c4cc;
+}
+
+.protein-list-container::-webkit-scrollbar-track {
+  border-radius: 3px;
+  background: #ebeef5;
+}
 </style>
