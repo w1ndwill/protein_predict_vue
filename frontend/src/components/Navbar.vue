@@ -19,7 +19,7 @@
           <el-dropdown trigger="click" @command="handleCommand">
             <div class="user-info">
               <el-avatar :size="32" class="user-avatar">{{ userInitials }}</el-avatar>
-              <span class="username">{{ currentUser.username }}</span>
+              <span class="username">{{ currentUser ? currentUser.username : '游客' }}</span>
               <i class="el-icon-arrow-down"></i>
             </div>
             <template #dropdown>
@@ -111,7 +111,10 @@ export default {
     checkAuthStatus() {
       this.isLoggedIn = isAuthenticated()
       if (this.isLoggedIn) {
-        this.currentUser = getCurrentUser()
+        const user = getCurrentUser()
+        this.currentUser = user || { username: '游客' }
+      } else {
+        this.currentUser = { username: '游客' }  // 设置默认值而非null
       }
     },
     handleCommand(command) {
