@@ -34,7 +34,7 @@ def predict_proteins(model, loader, device, threshold, sequences):
     from datetime import datetime
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    with torch.no_grad():
+    with torch.no_grad(): #  关闭梯度
         for batch in loader:
             batch = batch.to(device)
             out = model(batch)
