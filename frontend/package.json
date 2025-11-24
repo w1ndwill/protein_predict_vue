@@ -7,9 +7,11 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "@tsparticles/vue3": "^3.0.1",
     "axios": "^1.4.0",
     "d3": "^7.9.0",
     "element-plus": "^2.9.7",
+    "tsparticles": "^3.9.1",
     "vue": "^3.3.4",
     "vue-router": "^4.2.4"
   },

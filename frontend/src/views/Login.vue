@@ -2,7 +2,7 @@
   <div class="auth-container">
     <div class="auth-card">
       <div class="auth-header">
-        <img src="@/assets/image.png" alt="系统Logo" class="auth-logo rounded-logo" @mouseover="logoHover = true" @mouseleave="logoHover = false" :class="{ 'logo-hover': logoHover }" />
+        <img src="@/assets/image.png" alt="系统Logo" class="auth-logo" />
         <h1 class="auth-title">蛋白质功能预测系统</h1>
         <p class="auth-subtitle">欢迎回来，请登录您的账户</p>
       </div>
@@ -78,7 +78,6 @@ export default {
       loading: false,
       usernameFocus: false,
       passwordFocus: false,
-      logoHover: false,
       rules: {
         username: [
           { required: true, message: '请输入用户名或邮箱', trigger: 'blur' }
@@ -91,17 +90,8 @@ export default {
   },
   mounted() {
     this.checkLoginRedirect();
-    this.animateLogo();
   },
   methods: {
-    animateLogo() {
-      const logo = document.querySelector('.auth-logo');
-      if (logo) {
-        setTimeout(() => {
-          logo.classList.add('animated');
-        }, 300);
-      }
-    },
     async handleLogin() {
       this.$refs.loginFormRef.validate(async (valid) => {
         if (!valid) return;
@@ -115,7 +105,6 @@ export default {
             type: 'success',
             duration: 1500,
             onClose: () => {
-              // 登录成功后根据情况重定向
               const redirectPath = this.$route.query.redirect || '/';
               this.$router.push(redirectPath);
             }
@@ -135,7 +124,6 @@ export default {
       });
     },
     checkLoginRedirect() {
-      // 检查URL中是否包含重定向参数
       if (this.$route.query.redirect) {
         this.$message.info('请先登录以继续操作');
       }
@@ -145,52 +133,5 @@ export default {
 </script>
 
 <style scoped>
-.icon-active {
-  color: #1976d2 !important;
-  transform: scale(1.1);
-}
-
-.input-icon {
-  transition: all 0.3s ease;
-}
-
-.logo-hover {
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.rounded-logo {
-  border-radius: 12px !important; /* 添加圆角 */
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.auth-logo.animated {
-  animation: bounceIn 0.7s cubic-bezier(0.215, 0.61, 0.355, 1);
-}
-
-@keyframes bounceIn {
-  0% {
-    opacity: 0;
-    transform: scale3d(0.3, 0.3, 0.3);
-  }
-  20% {
-    transform: scale3d(1.1, 1.1, 1.1);
-  }
-  40% {
-    transform: scale3d(0.9, 0.9, 0.9);
-  }
-  60% {
-    opacity: 1;
-    transform: scale3d(1.03, 1.03, 1.03);
-  }
-  80% {
-    transform: scale3d(0.97, 0.97, 0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale3d(1, 1, 1);
-  }
-}
+/* All styles have been moved to /src/assets/styles/auth.css */
 </style>

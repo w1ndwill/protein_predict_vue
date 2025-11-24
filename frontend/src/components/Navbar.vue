@@ -1,17 +1,15 @@
 <template>
-  <div class="navbar">
+  <div class="navbar" :class="{ 'scrolled': isScrolled }">
     <div class="navbar-content">
-      <div class="logo-container"
-           @mouseenter="showPreview = true"
-           @mouseleave="showPreview = false">
+      <div class="logo-container">
         <img src="../assets/image.png" alt="Logo" class="logo-img" />
         <span class="logo-text">蛋白质功能预测</span>
       </div>
 
       <div class="nav-links">
-        <router-link to="/" class="nav-link" :class="{ 'active': currentPath === '/' }">首页</router-link>
-        <router-link to="/history" class="nav-link" :class="{ 'active': currentPath === '/history' }">历史记录</router-link>
-        <router-link to="/about" class="nav-link" :class="{ 'active': currentPath === '/about' }">关于系统</router-link>
+        <router-link to="/" class="nav-link" :class="{ 'active': $route.path === '/' }">首页</router-link>
+        <router-link to="/history" class="nav-link" :class="{ 'active': $route.path === '/history' }">历史记录</router-link>
+        <router-link to="/about" class="nav-link" :class="{ 'active': $route.path === '/about' }">关于</router-link>
       </div>
 
       <div class="user-actions">
@@ -19,20 +17,12 @@
           <el-dropdown trigger="click" @command="handleCommand">
             <div class="user-info">
               <el-avatar :size="32" class="user-avatar">{{ userInitials }}</el-avatar>
-              <span class="username">{{ currentUser ? currentUser.username : '游客' }}</span>
-              <i class="el-icon-arrow-down"></i>
+              <span class="username">{{ currentUser.username }}</span>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">
-                  <i class="el-icon-user"></i> 个人中心
-                </el-dropdown-item>
-                <el-dropdown-item command="history">
-                  <i class="el-icon-time"></i> 预测历史
-                </el-dropdown-item>
-                <el-dropdown-item divided command="logout">
-                  <i class="el-icon-switch-button"></i> 退出登录
-                </el-dropdown-item>
+                <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -43,388 +33,239 @@
         </template>
       </div>
     </div>
-
-    <!-- 将预览弹窗移到DOM最外层 -->
-    <teleport to="body">
-      <div class="logo-preview-container" v-if="showPreview">
-        <div class="logo-preview" :style="previewStyle">
-          <img src="../assets/image.png" alt="Logo预览" />
-        </div>
-      </div>
-    </teleport>
   </div>
 </template>
 
 <script>
-import { Setting } from '@element-plus/icons-vue'
-import { isAuthenticated, getCurrentUser, logout } from '@/services/authService'
-import { ref, computed, onMounted } from 'vue'
+import { isAuthenticated, getCurrentUser, logout } from '@/services/authService';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 
 export default {
-  components: {
-    Setting
-  },
-  props: {
-    showBackButton: {
-      type: Boolean,
-      default: false
-    }
-  },
-  data() {
-    return {
-      isLoggedIn: false,
-      currentUser: null,
-      showPreview: false
-    }
-  },
-  computed: {
-    currentPath() {
-      return this.$route.path;
-    },
-    previewStyle() {
-      // 动态计算预览窗口位置
-      const logoEl = document.querySelector('.logo-container');
-      if (logoEl) {
-        const rect = logoEl.getBoundingClientRect();
-        return {
-          position: 'fixed',
-          top: `${rect.bottom + 10}px`,
-          left: `${rect.left}px`
-        };
-      }
-      return {};
-    },
-    userInitials() {
-      if (!this.currentUser || !this.currentUser.username) return '用户'
-      return this.currentUser.username.substring(0, 1).toUpperCase()
-    }
-  },
-  created() {
-    this.checkAuthStatus()
-    // 监听路由变化，更新登录状态
-    this.$router.beforeEach((to, from, next) => {
-      this.checkAuthStatus()
-      next()
-    })
-  },
-  methods: {
-    checkAuthStatus() {
-      this.isLoggedIn = isAuthenticated()
-      if (this.isLoggedIn) {
-        const user = getCurrentUser()
-        this.currentUser = user || { username: '游客' }
-      } else {
-        this.currentUser = { username: '游客' }  // 设置默认值而非null
-      }
-    },
-    handleCommand(command) {
-      switch (command) {
-        case 'profile':
-          this.$router.push('/profile')
-          break
-        case 'history':
-          this.$router.push('/history')
-          break
-        case 'logout':
-          this.handleLogout()
-          break
-      }
-    },
-    async handleLogout() {
-      try {
-        logout()
-        this.isLoggedIn = false
-        this.currentUser = null
-        this.$message.success('成功退出登录')
+  name: 'Navbar',
+  setup() {
+    const router = useRouter();
+    const isLoggedIn = ref(false);
+    const currentUser = ref(null);
+    const isScrolled = ref(false);
 
-        // 如果当前页面需要登录才能访问，则重定向到登录页
-        const requiresAuth = this.$route.meta.requiresAuth
-        if (requiresAuth) {
-          this.$router.push('/login')
-        } else {
-          // 否则刷新当前页面
-          this.$router.go(0)
-        }
-      } catch (error) {
-        this.$message.error('退出登录时发生错误')
-        console.error(error)
+    const checkAuthStatus = () => {
+      isLoggedIn.value = isAuthenticated();
+      currentUser.value = getCurrentUser();
+    };
+
+    const handleScroll = () => {
+      isScrolled.value = window.scrollY > 10;
+    };
+
+    onMounted(() => {
+      checkAuthStatus();
+      window.addEventListener('scroll', handleScroll);
+      // Listen for auth changes
+      window.addEventListener('auth-change', checkAuthStatus);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('auth-change', checkAuthStatus);
+    });
+
+    const userInitials = computed(() => {
+      if (currentUser.value && currentUser.value.username) {
+        return currentUser.value.username.substring(0, 1).toUpperCase();
       }
-    }
-  }
-}
+      return '';
+    });
+
+    const handleCommand = (command) => {
+      if (command === 'logout') {
+        logout();
+        router.push('/login');
+      } else if (command === 'profile') {
+        router.push('/profile');
+      }
+    };
+
+    return {
+      isLoggedIn,
+      currentUser,
+      isScrolled,
+      userInitials,
+      handleCommand,
+    };
+  },
+};
 </script>
 
 <style scoped>
-/* 复制Home.vue中的导航栏样式 */
+/* Navbar Styling with Animations */
 .navbar {
-  background: linear-gradient(90deg, #2c3e50, #4b6cb7);
+  background-color: var(--color-background-soft);
+  border-bottom: 1px solid var(--color-border);
   padding: 0;
   width: 100%;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.navbar.scrolled {
+  box-shadow: var(--shadow-md);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
 }
 
 .navbar-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1200px;
+  max-width: 1280px;
   width: 100%;
-  margin: 0 auto;
-  padding: 0 20px;
-  height: 60px;
-  position: relative;
+  padding: 0 24px;
 }
 
-.logo-preview-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 9999;
-  pointer-events: none;
-}
-
+/* Logo Animation */
 .logo-container {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 4px 12px;
-  border-radius: 20px;
-  margin-right: 0;
-  margin-left: 0;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.logo-container:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
+  gap: 12px;
+  cursor: pointer;
 }
 
 .logo-img {
-  height: 32px;
-  margin-right: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  height: 36px;
+  border-radius: 50%;
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .logo-container:hover .logo-img {
-  transform: scale(1.1);
-}
-
-/* 预览弹窗样式 */
-.logo-preview {
-  position: absolute;
-  background: transparent; /* 移除白色背景 */
-  border-radius: 12px;
-  padding: 0; /* 移除内边距 */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); /* 更强的阴影效果 */
-  pointer-events: auto;
-  animation: fadeIn 0.25s ease;
-  overflow: hidden; /* 确保内容不溢出圆角边界 */
-}
-
-.logo-preview img {
-  max-width: 200px;
-  max-height: 180px; /* 限制最大高度 */
-  border-radius: 8px;
-  display: block; /* 移除图片底部间隙 */
-  object-fit: cover; /* 保持图片比例 */
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15)); /* 给图片添加阴影 */
-  transform-origin: center;
-  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* 弹性动画 */
-}
-
-@keyframes scaleIn {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
+  transform: rotate(360deg) scale(1.1);
 }
 
 .logo-text {
-  font-family: "Montserrat", "Microsoft YaHei", sans-serif;
-  font-weight: 600;
-  font-size: 1.2rem;
-  letter-spacing: 0.3px;
-  background: linear-gradient(90deg, #ffffff, #e1e8f0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-heading);
 }
 
+/* Nav Links Animation */
 .nav-links {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
-  gap: 25px;
+  gap: 32px;
 }
 
 .nav-link {
-  color: #e1e8f0;
+  color: var(--color-text);
   text-decoration: none;
   font-weight: 500;
-  padding: 6px 0;
+  padding: 8px 4px;
   position: relative;
-  transition: color 0.3s;
+  transition: color 0.3s ease;
 }
 
-.nav-link:hover, .nav-link.active {
-  color: white;
+.nav-link:hover {
+  color: var(--color-primary);
 }
 
 .nav-link::after {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 0;
   height: 2px;
-  background: white;
-  transition: width 0.3s;
+  background-color: var(--color-primary);
+  border-radius: 1px;
+  transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.nav-link:hover::after, .nav-link.active::after {
+.nav-link:hover::after,
+.nav-link.active::after {
   width: 100%;
 }
 
-/* 用户操作区域样式优化 */
+.nav-link.active {
+  color: var(--color-heading);
+  font-weight: 600;
+}
+
+/* User Actions & Buttons Animation */
 .user-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 22px;
-  padding: 4px 12px 4px 6px;
-  transition: all 0.2s;
-}
-
-.user-info:hover {
-  background: rgba(255, 255, 255, 0.2);
+  gap: 8px;
 }
 
 .user-avatar {
-  margin-right: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-}
-
-.user-info:hover .user-avatar {
-  transform: scale(1.05);
+  background-color: var(--color-secondary);
 }
 
 .username {
-  color: #ffffff;
+  color: var(--color-heading);
   font-weight: 500;
-  font-size: 0.9rem;
-  margin-right: 5px;
-  max-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .login-btn, .register-btn {
   text-decoration: none;
   font-weight: 600;
-  border-radius: 20px;
-  padding: 6px 16px;
+  border-radius: var(--border-radius-medium);
+  padding: 8px 16px;
   font-size: 0.9rem;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease-in-out;
+  border: 1px solid transparent;
 }
 
 .login-btn {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-primary);
+  background-color: transparent;
+  border-color: var(--color-primary);
 }
 
 .login-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
+  background-color: var(--color-primary);
+  color: var(--color-background-soft);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .register-btn {
-  background: rgba(255, 255, 255, 0.9);
-  color: #2c3e50;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background-color: var(--color-primary);
+  color: var(--color-background-soft);
 }
 
 .register-btn:hover {
-  background: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background-color: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-/* 下拉菜单样式优化 */
+/* Dropdown theming */
 :deep(.el-dropdown-menu) {
-  border-radius: 12px;
-  padding: 8px;
-  border: none;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12), 0 3px 6px rgba(0, 0, 0, 0.08);
+  background-color: var(--color-background-soft) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-lg);
 }
 
 :deep(.el-dropdown-item) {
-  border-radius: 6px;
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  margin: 2px 0;
+  color: var(--color-text);
 }
 
-:deep(.el-dropdown-item:not(.is-disabled):hover) {
-  background-color: #f0f5ff;
-  color: #1976d2;
-}
-
-:deep(.el-dropdown-item i) {
-  margin-right: 8px;
-  font-size: 1rem;
-}
-
-/* 移动设备适配 */
-@media (max-width: 768px) {
-  .user-info {
-    padding: 4px 8px;
-  }
-
-  .username {
-    max-width: 80px;
-  }
-
-  .login-btn, .register-btn {
-    padding: 5px 12px;
-    font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .username {
-    display: none;
-  }
-
-  .user-info {
-    padding: 2px;
-  }
-}
-
-@media (max-width: 768px) {
-  .nav-links {
-    gap: 15px;
-  }
-
-  .logo-text {
-    font-size: 1rem;
-  }
+:deep(.el-dropdown-item:hover) {
+  background-color: var(--color-background-mute);
+  color: var(--color-heading);
 }
 </style>
